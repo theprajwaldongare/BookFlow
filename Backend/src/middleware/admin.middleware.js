@@ -1,4 +1,4 @@
-import { Admin } from "../models/admin.model";
+import { Admin } from "../models/admin.model.js";
 import jwt from "jsonwebtoken"
 
 export const verifyJWT = async(req,res,next)=>{
@@ -13,11 +13,11 @@ export const verifyJWT = async(req,res,next)=>{
         const adm = await Admin.findById(decodeToken?._id).select("-password -refreshToken")
 
         if (!adm) {
-            return res.status(401).json({error:"Student is not present"})
+            return res.status(401).json({error:"Admin is not present"})
         }
         req.user=adm
         next()
     } catch (error) {
-        return res.status(401).json({error:"Student is not present"})
+        return res.status(401).json({error:"Admin is not present"})
     }
 }

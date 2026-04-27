@@ -94,8 +94,8 @@ const refreshAccessToken = async(req,res)=>{
             secure: true
         }
 
-        const accTok = studentByToken.genAccToken()
-        const refTok = studentByToken.genRefToken()
+        const accTok = adminByToken.genAccToken()
+        const refTok = adminByToken.genRefToken()
 
         adminByToken.refreshToken = refTok
         await adminByToken.save({ validateBeforeSave: false })
@@ -139,4 +139,4 @@ const logoutAdmin = async(req,res)=>{
 
 
 
-export { registerAdmin,loginAdmin,refreshAccessToken }
+export { registerAdmin,loginAdmin,refreshAccessToken,logoutAdmin }

@@ -57,4 +57,4 @@ adminSchema.methods.genRefToken = function () {
     )
 }
 
-export const Admin = mongoose.Schema("Admin", adminSchema)
+export const Admin = mongoose.model("Admin", adminSchema)
