@@ -15,11 +15,22 @@ const transactionSchema = new mongoose.Schema({
     issued_by:{
         type:Schema.Types.ObjectId,
         ref:"Admin",
-        required:true
+        default:null
+        // required:true
     },
+    // request_date:{ no need due to timestamps
+    //     type:Date,
+    //     default:Date.now 
+    // },
     issue_date:{
         type:Date,
-        default:Date.now
+        default:null
+        // default:Date.now
+    },
+    return_date:{
+        type:Date,
+        default:null
+        // default:Date.now
     },
     collected_by:{
         type:Schema.Types.ObjectId,
@@ -34,4 +45,4 @@ const transactionSchema = new mongoose.Schema({
     }
 },{timestamps:true})
 
-export const Transaction = mongoose.Schema("Transaction",transactionSchema)
+export const Transaction = mongoose.model("Transaction",transactionSchema)
