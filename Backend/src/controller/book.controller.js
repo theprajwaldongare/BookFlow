@@ -1,4 +1,5 @@
 import { Book } from "../models/book.model.js"
+import { Student } from "../models/student.model.js"
 import { Transaction } from "../models/transaction.model.js"
 
 const addBook = async (req, res) => {
@@ -105,8 +106,15 @@ const getPendingTransaction = async(req,res)=>{
         const filterReq = ['borrowRequested', 'returnRequested']
         const pendingThings = await Transaction.find({
             status: { $in: filterReq }
-        })
-
+        }).populate("student_id", "name email rollNo class")
+        .populate("book_id", "title price available_copies")
+        
+        // for(let i=0;i<pendingThings.length;i++){
+        //     const sid = await Student.findById(pendingThings[i].student_id)
+        //     const bid = await Book.findById(pendingThings[i].book_id)
+        //     pendingThings[i].add(student details and book details!!)
+        // }
+        
         return res.status(200).json({
             message:"All Pending Transactions",
             data:pendingThings
@@ -118,9 +126,114 @@ const getPendingTransaction = async(req,res)=>{
 }
 
 
+const approveBook = async(req,res)=>{
+    try {
+        const transactionId = req.params.transactionId
+        if (!transactionId) {
+            return res.status(400).json({error:"Invalid Transaction ID"})
+        }
+        const trDB = await Transaction.findById(transactionId)
+        if (!trDB) {
+            return res.status(404).json({error:"Invalid Transaction ID"})
+        }
+        if (trDB.status!="borrowRequested") {
+            return res.status(406).json({error:"Book already approved or something went wrong ..."})
+        }
+        const bookDB = await Book.findById(trDB.book_id)
+        if (!bookDB || bookDB.available_copies <= 0) {
+            return res.status(400).json({error: "Cannot approve: Book is out of stock!"})
+        }
+        bookDB.available_copies-=1
+        await bookDB.save()
+
+        trDB.issued_by = req.user._id
+        trDB.issue_date = Date.now()
+        trDB.status = "borrowed"
+
+        await trDB.save()
+        return res.status(200).json({
+            message:"Book is approved",
+            data:trDB
+        })
+
+    } catch (error) {
+        return res.status(500).json({error:"Not able to approve book... try later"})
+    }
+
+}
+
+const reqReturnBook = async (req,res) => {
+    try {
+        // const bookID = req.params.bookId
+        const transactionIDD = req.params.transactionId
+        const stdId = req.user._id
+        // verify is the return student is same as req.. one?? 
+        // verify is the request of book is borrowed ..if not then cant return request
+        // const trrDB = await Transaction.findOne({
+        //     student_id:stdId,
+        //     book_id:bookID
+        // })
+        const trrDB = await Transaction.findById(transactionIDD)
+        // instead of bookid we can also make transaction id in url... 
+        // if (!trrDB) {
+        //     return res.status(406).json({error:"Invalid student or book details"})
+        // }
+        if (!trrDB) {
+            return res.status(406).json({error:"Invalid transaction details"})
+        }
+        if (trrDB.student_id.toString() !== stdId.toString()) {
+            return res.status(403).json({error: "Student details mismatch !!"})
+        }
+        if (trrDB.status!="borrowed") {
+            return res.status(406).json({error:"Cant send the request of return"})
+        }
+    
+        trrDB.status = "returnRequested"
+        trrDB.return_date = Date.now()
+        await trrDB.save()
+        
+        return res.status(200).json({
+            message:"Return request send sucessfully!"
+        })
+    } catch (error) {
+        return res.status(500).json({error:"Something went wrong ..."})
+    }
+
+}
+
+const returnBook = async(req,res)=>{
+    try {
+
+        const transactionId = req.params.transactionId
+        if (!transactionId) {
+            return res.status(400).json({error:"Invalid Transaction ID"})
+        }
+        const trDB = await Transaction.findById(transactionId)
+        if (!trDB) {
+            return res.status(404).json({error:"Invalid Transaction ID"})
+        }
+        if (trDB.status!="returnRequested") {
+            return res.status(406).json({error:"Cant return book as status is not return request"})
+        }
+        const bookDB = await Book.findById(trDB.book_id)
+        if (!bookDB) {
+            return res.status(400).json({error: "Cannot return invalid book id"})
+        }
+        bookDB.available_copies+=1
+        await bookDB.save()
+
+        trDB.collected_by = req.user._id
+        trDB.status = "returned"
+
+        await trDB.save()
+        return res.status(200).json({
+            message:"Book is returned successfully !!!",
+            data:trDB
+        })
+    } catch (error) {
+        return res.status(500).json({error:"Something went wrong ..."})
+    }
+}
 
 
-
-
-
-export { addBook, getBooks, requestBook, getStudTransaction,getPendingTransaction }
+export { addBook, getBooks, requestBook, getStudTransaction,getPendingTransaction,approveBook,reqReturnBook,returnBook }
